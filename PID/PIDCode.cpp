@@ -1,5 +1,6 @@
 #include "PIDCode.h"
 
+//Aceleração da gravidade
 #define g 9.80665
 
 //Tem que colocar o Ki, mas pra não ter integrativo é só colocar 0
@@ -19,21 +20,23 @@ double HKp, HKd;
 unsigned long PIDPeriod;
 
 //Porcentagem base dos motores
-double BaseThrottle = 55.00;
+double BaseThrottle;
 /*
-    Frente
-M1     X   M2
-   \   |   /
-    \  |  /
-<------Z------> Y
-    /  |  \
-   /   |   \
- M3         M4
+        Frente
+     <-         -> 
+     M1    X    M2
+       \   |   /
+        \  |  /
+    <------Z------> Y
+        /  |  \
+       /   |   \
+     M3         M4
+     ->         <-
 */
 //Porcentagem final de cada motor
 double M1, M2, M3, M4;
 
-//O output vai ser +-10% para rotação e +-15% para altura, por enquanto são valores de chute, não sei quais seriam os melhores
+//O output vai ser +-10% para rotação e +-15% para altura por enquanto, eles são valores de chute, não sei quais seriam os melhores
 AutoPID XAnglePD(&Xinput, &Xsetpoint, &Xoutput, -10.00, 10.00, 0.0, Ki, 0.0);
 
 AutoPID YAnglePD(&Yinput, &Ysetpoint, &Youtput, -10.00, 10.00, 0.0, Ki, 0.0);
@@ -43,13 +46,13 @@ AutoPID ZAnglePD(&Zinput, &Zsetpoint, &Zoutput, -10.00, 10.00, 0.0, Ki, 0.0);
 AutoPID HeightPD(&Hinput, &Hsetpoint, &Houtput, -15.00, 15.00, 0.0, Ki, 0.0);
 
 void Input(double Xi, double Yi, double Zi, double Hi) {
-  
+
   Xinput = Xi;
   Yinput = Yi;
   Zinput = Zi;
 
-  //Assumindo que Hi seja a velocidade sem a conversão em relação a gravidade
-  Hinput = Hi/g;
+  //Assumindo que o Hi seja a altura
+  Hinput = Hi;
 
 }
 
@@ -59,10 +62,13 @@ void Setpoint(double Xs, double Ys, double Zs, double Hs) {
   Xsetpoint = Xs;
   Ysetpoint = Ys;
   Zsetpoint = Zs;
+
+  //Lembrando que a undidade do H é diferente
   Hsetpoint = Hs;
 
 }
 
+//"p" é proporcional e "d" é derivativo
 void Config(double Xp, double Xd, double Yp, double Yd, double Zp, double Zd, double Hp, double Hd) {
 
   XKp = Xp;
@@ -87,6 +93,12 @@ void Config(double Xp, double Xd, double Yp, double Yd, double Zp, double Zd, do
 
 }
 
+void SetBaseThrottle(double Throttle) {
+
+  BaseThrottle = Throttle;
+  
+}
+
 void SetPeriod(unsigned long Period) {
 
   PIDPeriod = Period;
@@ -107,30 +119,31 @@ void RunPID(bool X, bool Y, bool Z, bool H) {
 
 }
 
+//O metódo de soma é devido o sentido de rotação e posição de cada motor
 double GetM1() {
 
-  M1 = BaseThrottle + Xoutput - Youtput - Zoutput + Houtput;
+  M1 = BaseThrottle + Xoutput - Youtput + Zoutput + Houtput;
 
   return M1;
 }
 
 double GetM2() {
 
-  M2 = BaseThrottle - Xoutput - Youtput + Zoutput + Houtput;
+  M2 = BaseThrottle - Xoutput - Youtput - Zoutput + Houtput;
 
   return M2;
 }
 
 double GetM3() {
 
-  M3 = BaseThrottle + Xoutput + Youtput + Zoutput + Houtput;
+  M3 = BaseThrottle + Xoutput + Youtput - Zoutput + Houtput;
 
   return M3;
 }
 
 double GetM4() {
 
-  M4 = BaseThrottle - Xoutput + Youtput - Zoutput + Houtput;
+  M4 = BaseThrottle - Xoutput + Youtput + Zoutput + Houtput;
 
   return M4;
 }

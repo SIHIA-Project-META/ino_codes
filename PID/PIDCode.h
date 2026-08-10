@@ -12,6 +12,7 @@ void Config(double Xp, double Xd, double Yp, double Yd,
 
 void RunPID(bool X, bool Y, bool Z, bool H);
 void SetPeriod(unsigned long Period);
+void SetBaseThrottle(double Throttle);
 
 double GetM1();
 double GetM2();
